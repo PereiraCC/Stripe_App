@@ -27,6 +27,8 @@ class HomePage extends StatelessWidget {
             icon: Icon(Icons.add), 
             onPressed: ()  async {
 
+              mostrarLoading(context);
+
               final amount = blocPagar.state.montoPagarString;
               final currency = blocPagar.state.moneda;
 
@@ -34,6 +36,8 @@ class HomePage extends StatelessWidget {
                 amount: amount,
                 currency: currency
               );
+
+              Navigator.pop(context);
 
               if(resp.ok) {
                 mostrarAlerta(context, 'Tarjeta Ok', 'Todo correcto');
