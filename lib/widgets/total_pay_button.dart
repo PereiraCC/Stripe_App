@@ -136,7 +136,23 @@ class _BtnPay extends StatelessWidget {
           Text(' Pay', style: TextStyle(color: Colors.white, fontSize: 22)),
         ],
       ),
-      onPressed: () {},
+      onPressed: () async {
+
+        final stripeService = new StripeService();
+
+        final resp = await stripeService.pagarApplePayGooglePay(
+          amount: state.montoPagarString, 
+          currency: state.moneda
+        );
+
+        // if(resp.ok) {
+        //   mostrarAlerta(context, 'Tarjeta Ok', 'Todo correcto');
+        // } else {
+        //   mostrarAlerta(context, 'Algo salio mal', resp.msg);
+        // }
+
+
+      },
     );
   }
 
