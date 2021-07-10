@@ -6,6 +6,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:stripe_app/bloc/pagar/pagar_bloc.dart';
+import 'package:stripe_app/data/tarjetas.dart';
+import 'package:stripe_app/helpers/helpers.dart';
+import 'package:stripe_app/services/stripe_service.dart';
+import 'package:stripe_payment/stripe_payment.dart';
 
 class TotalPayButton extends StatelessWidget {
 
@@ -13,6 +17,7 @@ class TotalPayButton extends StatelessWidget {
   Widget build(BuildContext context) {
 
     final width = MediaQuery.of(context).size.width;
+    final blocPagar = BlocProvider.of<PagarBloc>(context).state;
 
     return Container(
       width: width,
@@ -34,7 +39,7 @@ class TotalPayButton extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Text('Total', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
-              Text('250.55 USD', style: TextStyle(fontSize: 20)),
+              Text('${blocPagar.montoPagar} ${blocPagar.moneda}', style: TextStyle(fontSize: 20)),
               
             ],
           ),
@@ -56,6 +61,7 @@ class _BtnPay extends StatelessWidget {
   final PagarState state;
   const _BtnPay(this.state);
 
+  
   @override
   Widget build(BuildContext context) {
     return state.tarjetaActiva 
@@ -65,6 +71,9 @@ class _BtnPay extends StatelessWidget {
 
 
   Widget buildBotonTarjeta(BuildContext context) {
+
+    final state = BlocProvider.of<PagarBloc>(context).state;
+
     return MaterialButton(
       height: 45,
       minWidth: 170,
@@ -77,7 +86,33 @@ class _BtnPay extends StatelessWidget {
           Text('  Pagar', style: TextStyle(color: Colors.white, fontSize: 22)),
         ],
       ),
-      onPressed: () {},
+      onPressed: () async {
+
+        mostrarLoading(context);
+
+        final stripeService = new StripeService();
+        final tarjeta = state.tarjeta;
+        final mesAnio = tarjeta.expiracyDate.split('/');
+
+        final resp = await stripeService.pagarConTarjetaExiste(
+          amount: state.montoPagarString, 
+          currency: state.moneda, 
+          card: CreditCard(  
+            number: tarjeta.cardNumber,
+            expMonth: int.parse(mesAnio[0]),
+            expYear: int.parse(mesAnio[1]),
+          ),
+        );
+
+        Navigator.pop(context);
+
+        if(resp.ok) {
+          mostrarAlerta(context, 'Tarjeta Ok', 'Todo correcto');
+        } else {
+          mostrarAlerta(context, 'Algo salio mal', resp.msg);
+        }
+
+      },
     );
   }
 
