@@ -1,5 +1,7 @@
 
+import 'package:dio/dio.dart';
 import 'package:meta/meta.dart';
+import 'package:stripe_app/models/payment_intent_response.dart';
 import 'package:stripe_payment/stripe_payment.dart';
 
 import 'package:stripe_app/models/stripe_custom_response.dart';
@@ -12,9 +14,16 @@ class StripeService {
   factory StripeService() => _instance;
 
   String _paymentApiUrl = 'https://api.stripe.com/v1/payment_intents';
-  String _secretKey     = 'sk_test_51JBnGDAeCHtZYDFdtqADQhJIbbEqyMFYypuq5WZjj4DD0jOr2oDCrIIvZxrVoW8oSY4M4EYPOvHRk0VXpG10nHsG00J2z5VKNE';
+  static String _secretKey     = 'sk_test_51JBnGDAeCHtZYDFdtqADQhJIbbEqyMFYypuq5WZjj4DD0jOr2oDCrIIvZxrVoW8oSY4M4EYPOvHRk0VXpG10nHsG00J2z5VKNE';
   String _apiKey        = 'pk_test_51JBnGDAeCHtZYDFdx92YSkSPQlq9q2X3LLul2oogX2sz1VnmWbMIHelApMHy7LAfPRjrJ1UmGEdn1vaLAWVprOIt00D1xt97X8';
   
+  final headerOptions = new Options(
+    contentType: Headers.formUrlEncodedContentType,
+    headers: {
+      'Authorization' : 'Bearer ${ StripeService._secretKey }'
+    }
+  );
+
   void init() {
 
     StripePayment.setOptions(
@@ -44,8 +53,11 @@ class StripeService {
       final paymentMethod = await StripePayment.paymentRequestWithCardForm(
         CardFormPaymentRequest()
       );
-
-      //TODO: Crear el intent
+      
+      final resp = await this._crearPaymentIntent( 
+        amount: amount,
+        currency: currency
+      );
 
       return StripeCustomResponse(ok: true);
 
@@ -66,11 +78,35 @@ class StripeService {
     
   }
 
-  Future _crearPaymentIntent({
+  Future<PaymentIntentResponse> _crearPaymentIntent({
     @required String amount,
     @required String currency,
   }) async {
     
+    try {
+      
+      final dio = new Dio();
+      final data = {
+        'amount' : amount,
+        'currency' : currency
+      };
+
+      final resp = await dio.post(
+        _paymentApiUrl,
+        data: data,
+        options: headerOptions
+      );
+
+      return PaymentIntentResponse.fromJson( resp.data );
+
+    } catch (e) {
+
+      print('Error en intento: ${e.toString() }');
+      return PaymentIntentResponse(
+        status: '400'
+      );
+    }
+
   }
 
   Future _realizarPago({
